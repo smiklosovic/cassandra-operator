@@ -13,6 +13,9 @@ import com.instaclustr.sidecar.cassandra.cassandra.CassandraModule;
 import com.instaclustr.sidecar.cassandra.operations.backup.BackupsModule;
 import com.instaclustr.sidecar.cassandra.operations.cleanup.CleanupsModule;
 import com.instaclustr.sidecar.cassandra.operations.decommission.DecommissioningModule;
+import com.instaclustr.sidecar.cassandra.operations.rebuild.RebuildModule;
+import com.instaclustr.sidecar.cassandra.operations.scrub.ScrubModule;
+import com.instaclustr.sidecar.cassandra.operations.upgradesstables.UpgradeSSTablesModule;
 import com.instaclustr.sidecar.cassandra.picocli.CassandraSidecarCLIOptions;
 import com.instaclustr.sidecar.cassandra.picocli.SidecarJarManifestVersionProvider;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -59,7 +62,10 @@ public final class Sidecar implements Callable<Void> {
                 new OperationsModule(),
                 new BackupsModule(),
                 new DecommissioningModule(),
-                new CleanupsModule()
+                new CleanupsModule(),
+                new UpgradeSSTablesModule(),
+                new ScrubModule(),
+                new RebuildModule()
         ).getInstance(Application.class).call();
     }
 }

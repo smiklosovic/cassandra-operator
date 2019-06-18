@@ -1,6 +1,8 @@
 package com.instaclustr.sidecar.cassandra.resource;
 
 import javax.inject.Inject;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -37,7 +39,7 @@ public class OperationsResource {
 
     @GET
     @Path("{id}")
-    public Operation getOperationById(@PathParam("id") final UUID id) {
+    public Operation getOperationById(@NotNull @PathParam("id") final UUID id) {
         final Operation operation = operationsService.operations().get(id);
 
         if (operation == null) {
@@ -48,7 +50,7 @@ public class OperationsResource {
     }
 
     @POST
-    public Response createNewOperation(final OperationRequest request) {
+    public Response createNewOperation(@Valid final OperationRequest request) {
         final Operation operation = operationsService.submitOperationRequest(request);
 
         final URI operationLocation = UriBuilder.fromResource(OperationsResource.class)
