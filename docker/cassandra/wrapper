@@ -1,0 +1,7 @@
+#!/bin/bash -xue
+
+if [ "${MEMORY_LOCK}" == "true" ]; then
+    exec /bin/bash-mod /usr/bin/entry-point
+else
+    exec /bin/bash /usr/bin/entry-point
+fi
