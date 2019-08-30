@@ -1,7 +1,7 @@
 #!/bin/bash -xue
 
 if [ -n "${MEMORY_LOCK-}" ] && [ "${MEMORY_LOCK}" == "true" ]; then
-    exec /bin/bash-mod /usr/bin/entry-point
+    exec /bin/bash-mod -xue /usr/bin/entry-point
 else
-    exec /bin/bash /usr/bin/entry-point
+    exec /bin/bash -xue /usr/bin/entry-point
 fi
