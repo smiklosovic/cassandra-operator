@@ -42,8 +42,6 @@ func createOrUpdateOperatorConfigMap(rctx *reconciliationRequestContext, seedNod
 
 		addPrometheusSupport(rctx.cdc, addFileFn)
 
-		addUnlimitedMemLock(rctx.cdc, addFileFn)
-
 		if err := controllerutil.SetControllerReference(rctx.cdc, configMap, rctx.scheme); err != nil {
 			return err
 		}
@@ -94,7 +92,6 @@ func createOrUpdateCassandraRackConfig(rctx *reconciliationRequestContext, rack 
 		return nil, err
 	}
 
-
 	// Only log if something has changed
 	if opresult != controllerutil.OperationResultNone {
 		logger.Info(fmt.Sprintf("ConfigMap %s %s.", configMap.Name, opresult))
@@ -135,15 +132,6 @@ func addPrometheusSupport(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, ad
 		addFileFn(
 			"cassandra-env.sh.d/001-cassandra-exporter.sh",
 			"JVM_OPTS=\"${JVM_OPTS} -javaagent:${CASSANDRA_HOME}/agents/cassandra-exporter-agent.jar=@${CASSANDRA_CONF}/cassandra-exporter.conf\"",
-		)
-	}
-}
-
-func addUnlimitedMemLock(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, addFileFn func(path string, data string)) {
-	if cdc.Spec.OptimizeKernelParams {
-		addFileFn(
-			"cassandra-env.sh.d/002-cassandra-ulimit.sh",
-			"ulimit -l unlimited",
 		)
 	}
 }

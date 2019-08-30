@@ -11,6 +11,10 @@ RUN /tmp/install-cassandra ${cassandra_version}
 
 COPY entry-point /usr/bin/entry-point
 
+# Allow entrypoint script to modify ulimit
+RUN setcap cap_ipc_lock=+ep /bin/bash \
+    && setcap cap_sys_resource=+ep /bin/bash
+
 COPY cassandra /usr/sbin/cassandra
 COPY nodetool /usr/bin/nodetool
 COPY cassandra.in.sh /usr/share/cassandra/
