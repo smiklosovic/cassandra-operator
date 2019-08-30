@@ -3,9 +3,11 @@ package cassandradatacenter
 import (
 	"context"
 	"fmt"
-	"github.com/instaclustr/cassandra-operator/pkg/common/cluster"
 	"regexp"
 	"strings"
+
+	"github.com/instaclustr/cassandra-operator/pkg/common/cluster"
+	"github.com/pkg/errors"
 
 	cassandraoperatorv1alpha1 "github.com/instaclustr/cassandra-operator/pkg/apis/cassandraoperator/v1alpha1"
 	"gopkg.in/yaml.v2"
@@ -31,12 +33,14 @@ func createOrUpdateOperatorConfigMap(rctx *reconciliationRequestContext, seedNod
 			configMapVolumeAddTextFile(configMap, volumeSource, path, data)
 		}
 
-		addCassandraYamlOverrides(rctx.cdc, seedNodesService, addFileFn)
+		err := addCassandraYamlOverrides(rctx.cdc, seedNodesService, addFileFn)
+		if err != nil {
+			return errors.Wrap(err, "adding Cassandra YAML overrides")
+		}
 
 		addCassandraJVMOptions(rctx.cdc, addFileFn)
 
 		addPrometheusSupport(rctx.cdc, addFileFn)
-
 
 		if err := controllerutil.SetControllerReference(rctx.cdc, configMap, rctx.scheme); err != nil {
 			return err
@@ -133,7 +137,7 @@ func addPrometheusSupport(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, ad
 	}
 }
 
-func addCassandraYamlOverrides(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, seedNodesService *corev1.Service, addFileFn func(path string, data string)) {
+func addCassandraYamlOverrides(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, seedNodesService *corev1.Service, addFileFn func(path string, data string)) error {
 	type SeedProvider struct {
 		ClassName  string              `yaml:"class_name"`
 		Parameters []map[string]string `yaml:"parameters"`
@@ -174,10 +178,12 @@ func addCassandraYamlOverrides(cdc *cassandraoperatorv1alpha1.CassandraDataCente
 	data, err := yaml.Marshal(cc)
 	if err != nil {
 		// we're serializing a known structure to YAML -- if that fails...
-		panic(err)
+		return errors.Wrap(err, "marshalling Cassandra YAML overrides")
 	}
 
 	addFileFn("cassandra.yaml.d/001-operator-overrides.yaml", string(data))
+
+	return nil
 }
 
 func addCassandraJVMOptions(cdc *cassandraoperatorv1alpha1.CassandraDataCenter, addFileFn func(path string, data string)) {
