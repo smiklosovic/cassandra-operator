@@ -55,14 +55,6 @@ spec:
         secretKeyRef:
           name: backup-secrets
           key: azurestoragekey
-  userConfigMapVolumeSource:
-    # example from doc/providers/pks.md
-    # the name of the ConfigMap
-    name: concurrent-data
-    # ConfigMap keys -> file paths (relative to /etc/cassandra)
-    items:
-      - key: 100-concurrent-yaml
-        path: cassandra.yaml.d/100-concurrent.yaml
   resources:
     limits:
       memory: 1Gi
@@ -74,10 +66,10 @@ spec:
       - ReadWriteOnce
     resources:
       requests:
-        storage: 2Gi
+        storage: 1Gi
 
   prometheusSupport: false
   optimizeKernelParams: true
   serviceAccountName: cassandra-performance
   # Needed to run on AKS
-  fsGroup: 999
+  #fsGroup: 999

@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import javax.inject.Inject;
+import javax.management.openmbean.TabularData;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -12,9 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
@@ -41,10 +44,9 @@ public class BackupOperation extends Operation<BackupOperationRequest> {
     private final Map<String, BackuperFactory> backuperFactoryMap;
 
     @Inject
-    public BackupOperation(
-            final Provider<StorageServiceMBean> storageServiceMBeanProvider,
-            final Map<String, BackuperFactory> backuperFactoryMap,
-            @Assisted final BackupOperationRequest request) {
+    public BackupOperation(final Provider<StorageServiceMBean> storageServiceMBeanProvider,
+                           final Map<String, BackuperFactory> backuperFactoryMap,
+                           @Assisted final BackupOperationRequest request) {
         super(request);
         this.storageServiceMBeanProvider = storageServiceMBeanProvider;
         this.backuperFactoryMap = backuperFactoryMap;
@@ -65,14 +67,25 @@ public class BackupOperation extends Operation<BackupOperationRequest> {
         final StorageServiceMBean storageServiceMBean = this.storageServiceMBeanProvider.get();
 
         try {
-            new TakeSnapshotOperation(storageServiceMBean,
-                                      new TakeSnapshotOperation.TakeSnapshotOperationRequest(request.keyspaces,
-                                                                                             request.snapshotTag,
-                                                                                             request.table)).run0();
+            final Map<String, TabularData> snapshotDetails = storageServiceMBean.getSnapshotDetails();
+
+            if (!snapshotDetails.containsKey(request.snapshotTag)) {
+                new TakeSnapshotOperation(storageServiceMBean,
+                                          new TakeSnapshotOperation.TakeSnapshotOperationRequest(request.keyspaces,
+                                                                                                 request.snapshotTag,
+                                                                                                 request.table)).run0();
+            } else {
+                logger.info(format("Specified snapshot tag '%s' already exists, snapshot was not taken.", request.snapshotTag));
+            }
+
             executeUpload(storageServiceMBean.getTokens());
         } finally {
-            new ClearSnapshotOperation(storageServiceMBean,
-                                       new ClearSnapshotOperation.ClearSnapshotOperationRequest(request.snapshotTag)).run0();
+            if (request.deleteSnapshot) {
+                new ClearSnapshotOperation(storageServiceMBean,
+                                           new ClearSnapshotOperation.ClearSnapshotOperationRequest(request.snapshotTag)).run0();
+            } else {
+                logger.info(format("Snapshot '%s' was not deleted.", request.snapshotTag));
+            }
         }
     }
 
@@ -114,7 +127,14 @@ public class BackupOperation extends Operation<BackupOperationRequest> {
         // add snapshot files to the manifest
         for (final KeyspaceColumnFamilySnapshot keyspaceColumnFamilySnapshot : keyspaceColumnFamilySnapshots) {
             final Path bucketKey = Paths.get("data").resolve(Paths.get(keyspaceColumnFamilySnapshot.keyspace, keyspaceColumnFamilySnapshot.table));
-            Iterables.addAll(manifest, SSTableUtils.ssTableManifest(keyspaceColumnFamilySnapshot.snapshotDirectory, bucketKey).collect(toList()));
+
+            Stream<ManifestEntry> manifestFiles = SSTableUtils.ssTableManifest(keyspaceColumnFamilySnapshot.snapshotDirectory, bucketKey);
+
+            if (!request.backupIndexes) {
+                manifestFiles = manifestFiles.filter(entry -> !entry.localFile.toString().contains("_idx"));
+            }
+
+            Iterables.addAll(manifest, manifestFiles.collect(toList()));
         }
 
         logger.debug("{} files in manifest for snapshot \"{}\".", manifest.size(), snapshotTag);
@@ -262,11 +282,10 @@ public class BackupOperation extends Operation<BackupOperationRequest> {
                 logger.info("Taking snapshot {} on {}.{}.", request.tag, keyspace, request.table);
                 // Currently only supported option by Cassandra during snapshot is to skipFlush
                 // An empty map is used as skipping flush is currently not implemented.
-                storageServiceMBean.takeTableSnapshot(keyspace, request.table, request.tag);
-
+                storageServiceMBean.takeSnapshot(request.tag, Collections.emptyMap(), format("%s.%s", keyspace, request.table));
             } else {
                 logger.info("Taking snapshot \"{}\" on {}.", request.tag, (request.keyspaces.isEmpty() ? "\"all\"" : request.keyspaces));
-                storageServiceMBean.takeSnapshot(request.tag, request.keyspaces.toArray(new String[0]));
+                storageServiceMBean.takeSnapshot(request.tag, Collections.emptyMap(), request.keyspaces.toArray(new String[0]));
             }
         }
 

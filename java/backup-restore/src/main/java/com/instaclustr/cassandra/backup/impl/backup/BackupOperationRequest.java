@@ -32,6 +32,14 @@ public class BackupOperationRequest extends BaseBackupOperationRequest {
             description = "The column family to snapshot/upload. Requires a keyspace to be specified.")
     public String table;
 
+    @Option(names = {"--backupIndexes"},
+            description = "Backups indexes as well, defaults to true.")
+    public boolean backupIndexes = true;
+
+    @Option(names = {"--deleteSnapshot"},
+            description = "Delete snapshots taken for uploading SSTables to remote storage after backup is done, defaults to true")
+    public boolean deleteSnapshot = true;
+
     @Parameters
     public List<String> keyspaces;
 
@@ -44,6 +52,7 @@ public class BackupOperationRequest extends BaseBackupOperationRequest {
                                   @JsonProperty("duration") final Time duration,
                                   @JsonProperty("bandwidth") final DataRate bandwidth,
                                   @JsonProperty("concurrentConnections") final Integer concurrentConnections,
+                                  @JsonProperty("waitForLock") final boolean backupIndexes,
                                   @JsonProperty("waitForLock") final boolean waitForLock,
                                   @JsonProperty("sharedContainerPath") final Path sharedContainerPath,
                                   @JsonProperty("cassandraDirectory") final Path cassandraDirectory,
@@ -56,22 +65,24 @@ public class BackupOperationRequest extends BaseBackupOperationRequest {
         this.snapshotTag = snapshotTag == null ? format("autosnap-%d", MILLISECONDS.toSeconds(currentTimeMillis())) : snapshotTag;
         this.offlineSnapshot = offlineSnapshot;
         this.table = table;
+        this.backupIndexes = backupIndexes;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("storageLocation", storageLocation)
-                .add("duration", duration)
-                .add("bandwidth", bandwidth)
-                .add("concurrentConnections", concurrentConnections)
-                .add("waitForLock", waitForLock)
-                .add("sharedContainerPath", sharedContainerPath)
-                .add("cassandraDirectory", cassandraDirectory)
-                .add("keyspaces", keyspaces)
-                .add("snapshotTag", snapshotTag)
-                .add("offlineSnapshot", offlineSnapshot)
-                .add("table", table)
-                .toString();
+                          .add("storageLocation", storageLocation)
+                          .add("duration", duration)
+                          .add("bandwidth", bandwidth)
+                          .add("concurrentConnections", concurrentConnections)
+                          .add("waitForLock", waitForLock)
+                          .add("sharedContainerPath", sharedContainerPath)
+                          .add("cassandraDirectory", cassandraDirectory)
+                          .add("keyspaces", keyspaces)
+                          .add("snapshotTag", snapshotTag)
+                          .add("offlineSnapshot", offlineSnapshot)
+                          .add("table", table)
+                          .add("backupIndexes", backupIndexes)
+                          .toString();
     }
 }

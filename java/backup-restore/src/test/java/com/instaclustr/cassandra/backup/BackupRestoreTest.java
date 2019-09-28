@@ -63,7 +63,7 @@ public class BackupRestoreTest {
 
     private final List<TestFileConfig> versionsToTest = ImmutableList.of(
             new TestFileConfig(sha1Hash, THREE)
-    );
+                                                                        );
 
 
     private static final Map<String, Path> tempDirs = new LinkedHashMap<>();
@@ -85,11 +85,11 @@ public class BackupRestoreTest {
 
     private List<Path> resolveSSTableComponentPaths(final String keyspace, final String table, final Path cassandraRoot, final int sequence, final TestFileConfig testFileConfig) {
         return BackupRestoreTestUtils.SSTABLE_FILES.stream()
-                .map(name -> cassandraRoot.resolve("data")
-                        .resolve(keyspace)
-                        .resolve(table)
-                        .resolve(String.format("%s-%s-big-%s", testFileConfig.getSstablePrefix(keyspace, table), sequence, name)))
-                .collect(Collectors.toList());
+                                                   .map(name -> cassandraRoot.resolve("data")
+                                                                             .resolve(keyspace)
+                                                                             .resolve(table)
+                                                                             .resolve(String.format("%s-%s-big-%s", testFileConfig.getSstablePrefix(keyspace, table), sequence, name)))
+                                                   .collect(Collectors.toList());
     }
 
 
@@ -129,9 +129,9 @@ public class BackupRestoreTest {
         //Make sure we deleted the files
         restoreRequest.keyspaceTables.entries().forEach(x -> {
             resolveSSTableComponentPaths(x.getKey(), x.getValue(), sharedContainerRoot, 1, testFileConfig).stream()
-                    .map(Path::toFile)
-                    .map(File::exists)
-                    .forEach(Assert::assertFalse);
+                                                                                                          .map(Path::toFile)
+                                                                                                          .map(File::exists)
+                                                                                                          .forEach(Assert::assertFalse);
         });
 
         new RestoreOperation(new HashMap<String, RestorerFactory>() {{
@@ -154,20 +154,15 @@ public class BackupRestoreTest {
         restoreRequest.keyspaceTables.entries().forEach(x -> {
             Stream.of(1, 2, 3).forEach(sequence ->
                                                resolveSSTableComponentPaths(x.getKey(), x.getValue(), sharedContainerRoot, sequence, testFileConfig).stream()
-                                                       .map(Path::toFile)
-                                                       .map(File::exists)
-                                                       .forEach(Assert::assertTrue));
+                                                                                                                                                    .map(Path::toFile)
+                                                                                                                                                    .map(File::exists)
+                                                                                                                                                    .forEach(Assert::assertTrue));
         });
 
 
         // Confirm cassandra.yaml present and includes tokens
         final Path cassandraYaml = sharedContainerRoot.resolve(confDir).resolve("cassandra.yaml");
         assertTrue(cassandraYaml.toFile().exists());
-        String cassandraYamlText = new String(Files.readAllBytes(cassandraYaml));
-//            Assert.assertTrue(cassandraYamlText.contains("initial_token: ")); //this is not really testing that we have configured tokens properly
-//            Assert.assertTrue(cassandraYamlText.contains("auto_bootstrap: false"));
-//            Assert.assertFalse(cassandraYamlText.contains("auto_bootstrap: true"));
-
     }
 
 
@@ -175,23 +170,6 @@ public class BackupRestoreTest {
     public void basicRestore() throws Exception {
         basicProviderBackupRestore(backupBucket);
     }
-
-//    @Test(description = "Full backup and restore to an existing cluster", groups = {"gcp"})
-//    public void basicGCPRestore() throws Exception {
-//        //TODO: make it easier to test multiple different buckets (from diff providers in one test run)
-//        basicProviderBackupRestore(StorageProviders.GCP_BLOB, bucket);
-//    }
-//
-//    @Test(description = "Full backup and restore to an existing cluster", groups = {"aws"})
-//    public void basicAWSRestore() throws Exception {
-//        basicProviderBackupRestore(StorageProviders.AWS_S3, bucket);
-//    }
-//
-//    @Test(description = "Full backup and restore to an existing cluster", groups = {"azure"})
-//    public void basicAzureRestore() throws Exception {
-//        basicProviderBackupRestore(StorageProviders.AZURE_BLOB, bucket);
-//    }
-
 
     public void basicProviderBackupRestore(final String bucket) throws Exception {
         final String keyspace = "keyspace1";
@@ -211,6 +189,7 @@ public class BackupRestoreTest {
                     null,
                     null,
                     10,
+                    true,
                     true,
                     sharedContainerRoot,
                     sharedContainerRoot,
